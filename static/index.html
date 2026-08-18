@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Skyline — Weather & News</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header class="top">
+      <h1>Skyline</h1>
+      <form id="city-form" class="city-form">
+        <input id="city-input" type="text" placeholder="Enter a city…" value="London" />
+        <button type="submit">Go</button>
+      </form>
+    </header>
+
+    <section id="weather-card" class="weather-card">
+      <p class="loading">Loading weather…</p>
+    </section>
+
+    <section class="news-section">
+      <h2>Headlines</h2>
+      <ul id="news-list" class="news-list">
+        <li class="loading">Loading news…</li>
+      </ul>
+    </section>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
