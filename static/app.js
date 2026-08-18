@@ -1,4 +1,4 @@
-const API_BASE = "http://127.0.0.1:8000"; // change this if your FastAPI runs elsewhere
+const API_BASE = "https://weather-project-rcda.onrender.com"; // change this if your FastAPI runs elsewhere
 
 const weatherCard = document.getElementById("weather-card");
 const newsList = document.getElementById("news-list");
