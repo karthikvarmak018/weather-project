@@ -1,8 +1,8 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
-from services.weather import get_weather
+from services.weather import get_weather, CityNotFoundError
 from services.news import get_news
 
 load_dotenv()
@@ -22,9 +22,13 @@ def home():
 
 @app.get("/dashboard")
 def dashboard(city: str, country_code: str = "us"):
-    weather = get_weather(city)
+    try:
+        weather = get_weather(city)
+    except CityNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
     news = get_news(country_code)
-    
+
     return {
         "weather": weather,
         "news": news

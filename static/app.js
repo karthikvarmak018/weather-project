@@ -13,18 +13,18 @@ async function loadDashboard(city) {
     const res = await fetch(`${API_BASE}/dashboard?city=${encodeURIComponent(city)}`);
 
     if (!res.ok) {
-      throw new Error(`Request failed with status ${res.status}`);
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.detail || `Request failed with status ${res.status}`);
     }
 
     const data = await res.json();
     renderWeather(data.weather);
     renderNews(data.news);
   } catch (err) {
-    weatherCard.innerHTML = `<p class="error">Couldn't load weather: ${err.message}</p>`;
+    weatherCard.innerHTML = `<p class="error">${err.message}</p>`;
     newsList.innerHTML = `<li class="error">Couldn't load news.</li>`;
   }
 }
-
 function renderWeather(weather) {
   weatherCard.innerHTML = `
     <p class="city-name">${weather.city}</p>

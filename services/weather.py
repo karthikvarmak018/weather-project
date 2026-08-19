@@ -4,6 +4,9 @@ import os
 WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")
 BASE_URL = "https://api.openweathermap.org/data/2.5/weather"
 
+class CityNotFoundError(Exception):
+    pass
+
 def get_weather(city: str):
     params = {
         "q": city,
@@ -11,10 +14,13 @@ def get_weather(city: str):
         "units": "metric"
     }
     response = requests.get(BASE_URL, params=params)
-    
+
+    if response.status_code == 404:
+        raise CityNotFoundError(f"'{city}' not found. Try a nearby major city or check the spelling.")
+
     if response.status_code != 200:
-        return {"error": "City not found or API error"}
-    
+        raise CityNotFoundError("Weather service error. Please try again.")
+
     data = response.json()
     return {
         "city": data["name"],
