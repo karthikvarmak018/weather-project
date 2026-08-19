@@ -5,9 +5,23 @@ const newsList = document.getElementById("news-list");
 const cityForm = document.getElementById("city-form");
 const cityInput = document.getElementById("city-input");
 
+function showSkeletons() {
+  weatherCard.innerHTML = `
+    <span class="skeleton skeleton-line" style="width:30%"></span>
+    <span class="skeleton skeleton-temp"></span>
+    <div style="display:flex; gap:24px; margin-top:16px;">
+      <span class="skeleton skeleton-row"></span>
+      <span class="skeleton skeleton-row"></span>
+      <span class="skeleton skeleton-row"></span>
+    </div>
+  `;
+  newsList.innerHTML = Array.from({ length: 4 })
+    .map(() => `<li style="border:none;"><span class="skeleton skeleton-news-item"></span></li>`)
+    .join("");
+}
+
 async function loadDashboard(city) {
-  weatherCard.innerHTML = `<p class="loading">Loading weather…</p>`;
-  newsList.innerHTML = `<li class="loading">Loading news…</li>`;
+  showSkeletons();
 
   try {
     const res = await fetch(`${API_BASE}/dashboard?city=${encodeURIComponent(city)}`);
@@ -25,6 +39,7 @@ async function loadDashboard(city) {
     newsList.innerHTML = `<li class="error">Couldn't load news.</li>`;
   }
 }
+
 function renderWeather(weather) {
   weatherCard.innerHTML = `
     <p class="city-name">${weather.city}</p>
