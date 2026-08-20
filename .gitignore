@@ -1,5 +1,11 @@
-# Environment variables
+# Environment variables & secrets
 .env
+.env.*
+!.env.example
+*.env
+*.key
+*.pem
+secrets/
 
 # Python cache & bytecode
 __pycache__/
