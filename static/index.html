@@ -3,31 +3,422 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Skyline — Weather & News</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta name="description" content="Skyline 2.0 — Real-time weather forecasting, atmospheric intelligence, interactive radar, and live global news hub." />
+  <title>Skyline 2.0 — Weather & News Intelligence Hub</title>
+
+  <!-- Google Fonts: Outfit & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+  <!-- Leaflet Map CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
+  <link rel="stylesheet" href="/static/style.css" />
 </head>
-<body>
-  <div class="wrap">
-    <header class="top">
-      <h1>Skyline</h1>
-      <form id="city-form" class="city-form">
-        <input id="city-input" type="text" placeholder="Enter a city…" value="London" />
-        <button type="submit">Go</button>
-      </form>
+<body class="theme-clear-day">
+  <!-- Dynamic Atmospheric Background Layers -->
+  <div class="ambient-glow" id="ambient-glow"></div>
+  <canvas id="particles-canvas" class="particles-canvas"></canvas>
+
+  <div class="app-layout">
+    <!-- Top Navigation Bar -->
+    <header class="app-header">
+      <div class="brand-group">
+        <div class="brand-icon">
+          <i class="fa-solid fa-cloud-bolt"></i>
+        </div>
+        <div class="brand-text">
+          <span class="brand-title">Skyline</span>
+          <span class="brand-subtitle">Weather & News Hub</span>
+        </div>
+      </div>
+
+      <!-- Search & Geolocation Bar -->
+      <div class="search-container">
+        <form id="search-form" class="search-form">
+          <div class="search-input-wrapper">
+            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+            <input 
+              id="city-input" 
+              type="text" 
+              placeholder="Search city, town or country..." 
+              autocomplete="off" 
+              spellcheck="false"
+              value="London" 
+            />
+            <button type="button" id="clear-search-btn" class="clear-search-btn" title="Clear input" style="display: none;">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+          <button type="submit" class="btn btn-primary" id="search-btn" title="Search">
+            <span>Search</span>
+            <i class="fa-solid fa-arrow-right"></i>
+          </button>
+          <button type="button" class="btn btn-icon" id="geo-btn" title="Use My Current GPS Location">
+            <i class="fa-solid fa-location-crosshairs"></i>
+          </button>
+        </form>
+      </div>
+
+      <!-- Utilities: Unit Switch, Audio Voice Briefing, Live Clock -->
+      <div class="header-actions">
+        <!-- Audio Daily Briefing Button -->
+        <button id="voice-briefing-btn" class="btn btn-glass voice-btn" title="Listen to AI Daily Briefing">
+          <i class="fa-solid fa-volume-high"></i>
+          <span class="voice-btn-text">Audio Brief</span>
+        </button>
+
+        <!-- Unit Toggle -->
+        <div class="unit-toggle" id="unit-toggle" title="Switch °C / °F">
+          <button class="unit-btn active" data-unit="metric">°C</button>
+          <button class="unit-btn" data-unit="imperial">°F</button>
+        </div>
+
+        <!-- Refresh Button -->
+        <button class="btn btn-icon btn-glass" id="refresh-btn" title="Refresh Live Data">
+          <i class="fa-solid fa-rotate-right"></i>
+        </button>
+
+        <!-- Live Clock -->
+        <div class="live-clock" id="live-clock">
+          <span class="time-display" id="clock-time">--:--</span>
+          <span class="date-display" id="clock-date">Loading...</span>
+        </div>
+      </div>
     </header>
 
-    <section id="weather-card" class="weather-card">
-      <p class="loading">Loading weather…</p>
+    <!-- Quick Location Chips & Saved Favorites -->
+    <section class="quick-nav-bar">
+      <div class="quick-chips-group">
+        <span class="chips-label"><i class="fa-solid fa-compass"></i> Popular:</span>
+        <div class="chips-scroll" id="popular-chips">
+          <button class="chip active" data-city="London">London</button>
+          <button class="chip" data-city="New York">New York</button>
+          <button class="chip" data-city="Tokyo">Tokyo</button>
+          <button class="chip" data-city="Paris">Paris</button>
+          <button class="chip" data-city="Sydney">Sydney</button>
+          <button class="chip" data-city="Dubai">Dubai</button>
+          <button class="chip" data-city="Mumbai">Mumbai</button>
+          <button class="chip" data-city="Singapore">Singapore</button>
+        </div>
+      </div>
+
+      <div class="favorites-group">
+        <button id="add-favorite-btn" class="btn-chip-action" title="Bookmark this location">
+          <i class="fa-regular fa-star" id="favorite-star-icon"></i>
+          <span>Save City</span>
+        </button>
+        <div class="favorites-list" id="favorites-list"></div>
+      </div>
     </section>
 
-    <section class="news-section">
-      <h2>Headlines</h2>
-      <ul id="news-list" class="news-list">
-        <li class="loading">Loading news…</li>
-      </ul>
-    </section>
+    <!-- Toast Notification Banner -->
+    <div id="toast" class="toast hidden"></div>
+
+    <!-- Main Multi-Column Grid Dashboard -->
+    <main class="dashboard-grid">
+      <!-- Left Column: Weather Intelligence Core -->
+      <div class="weather-column">
+        
+        <!-- Hero Weather Banner Card -->
+        <section class="card hero-card" id="hero-card">
+          <div class="hero-header">
+            <div class="location-badge">
+              <i class="fa-solid fa-location-dot"></i>
+              <h2 id="hero-city-name">London</h2>
+              <span id="hero-country-badge" class="country-badge">GB</span>
+            </div>
+            <div class="live-status-badge">
+              <span class="pulse-dot"></span>
+              <span id="hero-update-time">Live</span>
+            </div>
+          </div>
+
+          <div class="hero-main-content">
+            <div class="hero-temp-block">
+              <div class="temp-wrapper">
+                <span class="hero-temp" id="hero-temp">22</span>
+                <span class="hero-temp-unit" id="hero-unit">°C</span>
+              </div>
+              <div class="hero-condition-group">
+                <span class="hero-condition" id="hero-condition">Partly Cloudy</span>
+                <div class="hero-range">
+                  <span><i class="fa-solid fa-arrow-up"></i> <span id="hero-temp-max">24°</span></span>
+                  <span><i class="fa-solid fa-arrow-down"></i> <span id="hero-temp-min">18°</span></span>
+                  <span class="feels-like-text">Feels like <strong id="hero-feels-like">21°</strong></span>
+                </div>
+              </div>
+            </div>
+
+            <div class="hero-visual-block">
+              <div class="hero-weather-icon-glow" id="hero-icon-container">
+                <img id="hero-weather-img" src="https://openweathermap.org/img/wn/02d@4x.png" alt="Weather icon" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Smart AI Daily Briefing & Lifestyle Insight -->
+          <div class="smart-insight-banner" id="smart-insight-box">
+            <div class="insight-icon">
+              <i class="fa-solid fa-wand-magic-sparkles"></i>
+            </div>
+            <div class="insight-content">
+              <span class="insight-title">Smart Lifestyle Brief</span>
+              <p class="insight-text" id="smart-insight-text">Pleasant weather outdoors! Great day for walks, cycling, or patio dining.</p>
+            </div>
+            <div class="insight-tag" id="outfit-tag">
+              <i class="fa-solid fa-shirt"></i>
+              <span id="outfit-text">Casual comfort</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- 24-Hour Hourly Forecast Section -->
+        <section class="card section-card">
+          <div class="section-title-row">
+            <div class="title-with-icon">
+              <i class="fa-solid fa-clock"></i>
+              <h3>24-Hour Hourly Forecast</h3>
+            </div>
+            <span class="subtitle-hint">Next 24 hours trend</span>
+          </div>
+          <div class="hourly-scroll-track" id="hourly-track">
+            <!-- Rendered by JS -->
+          </div>
+        </section>
+
+        <!-- 5-Day Extended Forecast Section -->
+        <section class="card section-card">
+          <div class="section-title-row">
+            <div class="title-with-icon">
+              <i class="fa-solid fa-calendar-days"></i>
+              <h3>5-Day Extended Outlook</h3>
+            </div>
+            <span class="subtitle-hint">Daily temperature spectrum</span>
+          </div>
+          <div class="daily-forecast-list" id="daily-forecast-list">
+            <!-- Rendered by JS -->
+          </div>
+        </section>
+
+        <!-- 6-Tile Environmental Metrics Matrix -->
+        <section class="environmental-matrix">
+          <!-- 1. Humidity & Dew Point -->
+          <div class="card metric-card">
+            <div class="metric-header">
+              <span class="metric-title"><i class="fa-solid fa-droplet"></i> Humidity</span>
+              <span class="metric-badge" id="humidity-badge">Normal</span>
+            </div>
+            <div class="metric-body">
+              <div class="metric-main-value">
+                <span id="val-humidity">58</span><span class="metric-unit">%</span>
+              </div>
+              <div class="metric-progress-bar">
+                <div class="progress-fill humidity-fill" id="bar-humidity" style="width: 58%;"></div>
+              </div>
+              <p class="metric-subtext">Dew point is <strong id="val-dew-point">13.2°</strong></p>
+            </div>
+          </div>
+
+          <!-- 2. Wind & Direction -->
+          <div class="card metric-card">
+            <div class="metric-header">
+              <span class="metric-title"><i class="fa-solid fa-wind"></i> Wind & Gusts</span>
+              <span class="metric-badge" id="wind-direction-badge">NW</span>
+            </div>
+            <div class="metric-body">
+              <div class="wind-metric-row">
+                <div class="metric-main-value">
+                  <span id="val-wind-speed">4.2</span><span class="metric-unit" id="unit-wind">m/s</span>
+                </div>
+                <!-- Interactive Compass Dial -->
+                <div class="compass-dial" title="Wind Direction">
+                  <div class="compass-arrow" id="compass-arrow" style="transform: rotate(315deg);">
+                    <i class="fa-solid fa-location-arrow"></i>
+                  </div>
+                  <span class="compass-north">N</span>
+                </div>
+              </div>
+              <p class="metric-subtext">Peak gusts up to <strong id="val-wind-gust">6.5 m/s</strong></p>
+            </div>
+          </div>
+
+          <!-- 3. Air Quality Index (AQI) -->
+          <div class="card metric-card">
+            <div class="metric-header">
+              <span class="metric-title"><i class="fa-solid fa-leaf"></i> Air Quality</span>
+              <span class="aqi-pill" id="aqi-pill">Good (1/5)</span>
+            </div>
+            <div class="metric-body">
+              <div class="metric-main-value">
+                <span id="val-aqi-label">Good</span>
+              </div>
+              <div class="aqi-pollutants-mini" id="aqi-pollutants">
+                <span>PM2.5: <strong id="val-pm25">8.4</strong></span>
+                <span>PM10: <strong id="val-pm10">14.2</strong></span>
+                <span>O3: <strong id="val-o3">45.0</strong></span>
+              </div>
+              <p class="metric-subtext" id="val-aqi-desc">Air quality is fresh and safe for outdoors.</p>
+            </div>
+          </div>
+
+          <!-- 4. UV Index & Sun Exposure -->
+          <div class="card metric-card">
+            <div class="metric-header">
+              <span class="metric-title"><i class="fa-solid fa-sun"></i> UV Index</span>
+              <span class="metric-badge" id="uv-badge">Moderate</span>
+            </div>
+            <div class="metric-body">
+              <div class="metric-main-value">
+                <span id="val-uv">4.2</span><span class="metric-unit">/ 11+</span>
+              </div>
+              <div class="metric-progress-bar">
+                <div class="progress-fill uv-fill" id="bar-uv" style="width: 38%;"></div>
+              </div>
+              <p class="metric-subtext" id="val-uv-desc">Wear sunglasses on bright days.</p>
+            </div>
+          </div>
+
+          <!-- 5. Visibility & Pressure -->
+          <div class="card metric-card">
+            <div class="metric-header">
+              <span class="metric-title"><i class="fa-solid fa-eye"></i> Visibility</span>
+              <span class="metric-badge" id="visibility-badge">Clear</span>
+            </div>
+            <div class="metric-body">
+              <div class="metric-main-value">
+                <span id="val-visibility">10.0</span><span class="metric-unit" id="unit-visibility">km</span>
+              </div>
+              <div class="pressure-row">
+                <span>Pressure: <strong id="val-pressure">1014</strong> hPa</span>
+                <span class="pressure-badge"><i class="fa-solid fa-gauge-high"></i> Normal</span>
+              </div>
+              <p class="metric-subtext">Cloud cover is <strong id="val-clouds">45%</strong></p>
+            </div>
+          </div>
+
+          <!-- 6. Sunrise & Sunset Solar Tracker -->
+          <div class="card metric-card">
+            <div class="metric-header">
+              <span class="metric-title"><i class="fa-solid fa-circle-half-stroke"></i> Sun Tracker</span>
+              <span class="metric-badge" id="sun-badge">Daylight</span>
+            </div>
+            <div class="metric-body">
+              <div class="sun-times-grid">
+                <div class="sun-time-item">
+                  <i class="fa-solid fa-sunrise sun-icon-rise"></i>
+                  <div>
+                    <span class="sun-label">Sunrise</span>
+                    <strong class="sun-val" id="val-sunrise">05:48</strong>
+                  </div>
+                </div>
+                <div class="sun-time-item">
+                  <i class="fa-solid fa-sunset sun-icon-set"></i>
+                  <div>
+                    <span class="sun-label">Sunset</span>
+                    <strong class="sun-val" id="val-sunset">20:15</strong>
+                  </div>
+                </div>
+              </div>
+              <div class="sun-arc-progress">
+                <div class="sun-arc-bar" id="sun-arc-bar" style="width: 65%;"></div>
+              </div>
+              <p class="metric-subtext" id="daylight-duration">Daylight: 14h 27m</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Interactive Live Weather Radar & Map -->
+        <section class="card section-card map-section">
+          <div class="section-title-row">
+            <div class="title-with-icon">
+              <i class="fa-solid fa-map-location-dot"></i>
+              <h3>Interactive Weather Radar</h3>
+            </div>
+            <div class="map-controls">
+              <button class="map-layer-btn active" data-layer="temp">Temp</button>
+              <button class="map-layer-btn" data-layer="clouds">Clouds</button>
+              <button class="map-layer-btn" data-layer="precipitation">Rain</button>
+            </div>
+          </div>
+          <div id="weather-map" class="weather-map-container"></div>
+        </section>
+      </div>
+
+      <!-- Right Column: News Intelligence Hub -->
+      <div class="news-column">
+        <section class="card news-hub-card">
+          <div class="news-hub-header">
+            <div class="news-title-group">
+              <div class="news-icon-badge">
+                <i class="fa-solid fa-newspaper"></i>
+              </div>
+              <div>
+                <h3 class="news-main-title">Global News Wire</h3>
+                <span class="news-subtitle" id="news-subtitle">Curated live headlines</span>
+              </div>
+            </div>
+
+            <!-- News Country Selector Dropdown -->
+            <div class="country-select-wrapper">
+              <select id="news-country-select" class="custom-select" title="Select News Country">
+                <option value="us">🇺🇸 United States</option>
+                <option value="gb">🇬🇧 United Kingdom</option>
+                <option value="in">🇮🇳 India</option>
+                <option value="ca">🇨🇦 Canada</option>
+                <option value="au">🇦🇺 Australia</option>
+                <option value="fr">🇫🇷 France</option>
+                <option value="de">🇩🇪 Germany</option>
+                <option value="jp">🇯🇵 Japan</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- News Category Filter Pills -->
+          <div class="news-categories-bar" id="news-categories">
+            <button class="cat-pill active" data-category="general"><i class="fa-solid fa-globe"></i> Top</button>
+            <button class="cat-pill" data-category="technology"><i class="fa-solid fa-microchip"></i> Tech</button>
+            <button class="cat-pill" data-category="business"><i class="fa-solid fa-chart-line"></i> Business</button>
+            <button class="cat-pill" data-category="science"><i class="fa-solid fa-atom"></i> Science</button>
+            <button class="cat-pill" data-category="health"><i class="fa-solid fa-heart-pulse"></i> Health</button>
+            <button class="cat-pill" data-category="sports"><i class="fa-solid fa-trophy"></i> Sports</button>
+            <button class="cat-pill" data-category="entertainment"><i class="fa-solid fa-film"></i> Entertainment</button>
+          </div>
+
+          <!-- In-News Search Filter -->
+          <div class="news-search-box">
+            <i class="fa-solid fa-filter"></i>
+            <input type="text" id="news-search-input" placeholder="Filter articles by keyword or topic..." />
+            <button id="news-search-btn" class="btn btn-sm btn-glass">Filter</button>
+          </div>
+
+          <!-- News Articles Stream List -->
+          <div class="news-stream" id="news-stream">
+            <!-- Skeleton loaders or articles populated by JS -->
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <div class="footer-content">
+        <p><strong>Skyline 2.0</strong> &mdash; Engineered with FastAPI, OpenWeatherMap, OpenStreetMap, and Global News Wire.</p>
+        <div class="footer-links">
+          <span><i class="fa-solid fa-bolt"></i> Ultra-low latency</span>
+          <span><i class="fa-solid fa-shield-halved"></i> Privacy-first GPS</span>
+          <span><i class="fa-solid fa-signal"></i> 99.9% Uptime</span>
+        </div>
+      </div>
+    </footer>
   </div>
 
-  <script src="app.js"></script>
+  <!-- Leaflet Map JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="/static/app.js"></script>
 </body>
 </html>
